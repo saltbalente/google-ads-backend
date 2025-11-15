@@ -26,7 +26,6 @@ export default async function handler(req, res) {
       headlines,
       descriptions,
       finalUrl,
-      // Opcional: para validación
       apiKey
     } = req.body;
 
@@ -96,10 +95,11 @@ export default async function handler(req, res) {
       console.error('Client ID:', clientId ? '✓' : '✗');
       console.error('Client Secret:', clientSecret ? '✓' : '✗');
       console.error('Refresh Token:', refreshToken ? '✓' : '✗');
+      console.error('Login Customer ID:', loginCustomerId ? '✓' : '✗');
       return res.status(500).json({ 
         success: false,
         error: 'Configuración del servidor incompleta',
-        hint: 'Verifica que las credenciales sean correctas y que la cuenta tenga permisos'
+        hint: 'Verifica que las variables de entorno estén configuradas en Vercel'
       });
     }
 
@@ -121,48 +121,52 @@ export default async function handler(req, res) {
 
     console.log('📝 Preparando operación de creación...');
 
-    // Preparar resource name del ad group
-    const adGroupResourceName = `customers/${customerId}/adGroups/${adGroupId}`;
-
-    // Construir operación de creación
-    const operation = {
-      create: {
-        ad_group: adGroupResourceName,
-        status: 'ENABLED',
-        ad: {
-          final_urls: [finalUrl],
-          responsive_search_ad: {
-            headlines: headlines.map(text => ({ text })),
-            descriptions: descriptions.map(text => ({ text }))
-          }
+    // Construir el anuncio responsive search ad
+    const adGroupAd = {
+      ad_group: `customers/${customerId}/adGroups/${adGroupId}`,
+      status: 'PAUSED', // Crear pausado para revisión
+      ad: {
+        final_urls: [finalUrl],
+        responsive_search_ad: {
+          headlines: headlines.map(text => ({ text })),
+          descriptions: descriptions.map(text => ({ text })),
+          path1: '',
+          path2: ''
         }
       }
     };
 
     console.log('🚀 Enviando request a Google Ads API...');
+    console.log(`📊 Customer: ${customerId}, Ad Group: ${adGroupId}`);
     console.log(`📊 Títulos: ${headlines.length}, Descripciones: ${descriptions.length}`);
 
-    // Ejecutar creación del anuncio
-    const response = await customer.adGroupAds.create([operation]);
+    // Ejecutar creación del anuncio usando mutateResources
+    const response = await customer.mutateResources([
+      {
+        ad_group_ad: {
+          create: adGroupAd
+        }
+      }
+    ]);
 
     console.log('✅ Respuesta de Google Ads:', JSON.stringify(response, null, 2));
 
     // Extraer resource name
-    const resourceName = response?.results?.[0]?.resource_name || 
-                        response?.[0]?.resource_name ||
-                        'unknown';
+    const result = response?.mutate_operation_responses?.[0];
+    const resourceName = result?.ad_group_ad_result?.resource_name || 'unknown';
 
     console.log('✅ Anuncio creado exitosamente:', resourceName);
 
     return res.status(200).json({
       success: true,
       resourceName: resourceName,
-      message: 'Anuncio creado exitosamente en Google Ads',
+      message: 'Anuncio creado exitosamente en Google Ads (pausado para revisión)',
       details: {
         customerId,
         adGroupId,
         headlinesCount: headlines.length,
-        descriptionsCount: descriptions.length
+        descriptionsCount: descriptions.length,
+        status: 'PAUSED'
       }
     });
 
