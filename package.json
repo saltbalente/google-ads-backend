@@ -1,0 +1,25 @@
+{
+  "name": "google-ads-backend",
+  "version": "1.0.0",
+  "description": "Backend para Google Ads API con soporte gRPC",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "14.0.4",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "google-ads-api": "^16.0.0"
+  },
+  "devDependencies": {
+    "eslint": "8.56.0",
+    "eslint-config-next": "14.0.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
