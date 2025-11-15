@@ -12,7 +12,8 @@ export default async function handler(req, res) {
     process.env.GOOGLE_ADS_DEVELOPER_TOKEN &&
     process.env.GOOGLE_ADS_CLIENT_ID &&
     process.env.GOOGLE_ADS_CLIENT_SECRET &&
-    process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID
+    process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID &&
+    process.env.GOOGLE_ADS_REFRESH_TOKEN
   );
 
   return res.status(200).json({

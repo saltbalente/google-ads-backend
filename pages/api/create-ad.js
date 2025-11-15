@@ -26,7 +26,6 @@ export default async function handler(req, res) {
       headlines,
       descriptions,
       finalUrl,
-      refreshToken,
       // Opcional: para validación
       apiKey
     } = req.body;
@@ -34,11 +33,11 @@ export default async function handler(req, res) {
     console.log('📥 Request recibido para customer:', customerId);
 
     // Validaciones básicas
-    if (!customerId || !adGroupId || !headlines || !descriptions || !finalUrl || !refreshToken) {
+    if (!customerId || !adGroupId || !headlines || !descriptions || !finalUrl) {
       return res.status(400).json({ 
         success: false,
         error: 'Faltan campos requeridos',
-        required: ['customerId', 'adGroupId', 'headlines', 'descriptions', 'finalUrl', 'refreshToken']
+        required: ['customerId', 'adGroupId', 'headlines', 'descriptions', 'finalUrl']
       });
     }
 
@@ -89,12 +88,18 @@ export default async function handler(req, res) {
     const clientId = process.env.GOOGLE_ADS_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET;
     const loginCustomerId = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
+    const refreshToken = process.env.GOOGLE_ADS_REFRESH_TOKEN;
 
-    if (!developerToken || !clientId || !clientSecret) {
+    if (!developerToken || !clientId || !clientSecret || !refreshToken) {
       console.error('❌ Faltan credenciales en el servidor');
+      console.error('Developer Token:', developerToken ? '✓' : '✗');
+      console.error('Client ID:', clientId ? '✓' : '✗');
+      console.error('Client Secret:', clientSecret ? '✓' : '✗');
+      console.error('Refresh Token:', refreshToken ? '✓' : '✗');
       return res.status(500).json({ 
         success: false,
-        error: 'Configuración del servidor incompleta'
+        error: 'Configuración del servidor incompleta',
+        hint: 'Verifica que las credenciales sean correctas y que la cuenta tenga permisos'
       });
     }
 
