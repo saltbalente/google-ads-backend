@@ -121,17 +121,19 @@ export default async function handler(req, res) {
 
     console.log('📝 Preparando operación de creación...');
 
-    // Construir el anuncio responsive search ad
-    const adGroupAd = {
-      ad_group: `customers/${customerId}/adGroups/${adGroupId}`,
-      status: 'PAUSED', // Crear pausado para revisión
-      ad: {
-        final_urls: [finalUrl],
-        responsive_search_ad: {
-          headlines: headlines.map(text => ({ text })),
-          descriptions: descriptions.map(text => ({ text })),
-          path1: '',
-          path2: ''
+    // Construir operación usando el formato correcto de la librería
+    const operation = {
+      entity: 'ad_group_ad',
+      operation: 'create',
+      resource: {
+        ad_group: `customers/${customerId}/adGroups/${adGroupId}`,
+        status: 'PAUSED',
+        ad: {
+          final_urls: [finalUrl],
+          responsive_search_ad: {
+            headlines: headlines.map(text => ({ text })),
+            descriptions: descriptions.map(text => ({ text }))
+          }
         }
       }
     };
@@ -140,20 +142,15 @@ export default async function handler(req, res) {
     console.log(`📊 Customer: ${customerId}, Ad Group: ${adGroupId}`);
     console.log(`📊 Títulos: ${headlines.length}, Descripciones: ${descriptions.length}`);
 
-    // Ejecutar creación del anuncio usando mutateResources
-    const response = await customer.mutateResources([
-      {
-        ad_group_ad: {
-          create: adGroupAd
-        }
-      }
-    ]);
+    // Usar el método mutate del servicio adGroupAds
+    const response = await customer.adGroupAds.create([operation.resource]);
 
     console.log('✅ Respuesta de Google Ads:', JSON.stringify(response, null, 2));
 
     // Extraer resource name
-    const result = response?.mutate_operation_responses?.[0];
-    const resourceName = result?.ad_group_ad_result?.resource_name || 'unknown';
+    const resourceName = response?.results?.[0]?.resource_name || 
+                         response?.[0]?.resource_name || 
+                         'unknown';
 
     console.log('✅ Anuncio creado exitosamente:', resourceName);
 
