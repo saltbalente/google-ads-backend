@@ -26,14 +26,14 @@ GET /api/health
         <pre style={{ background: '#fff', padding: '10px', borderRadius: '4px' }}>
 POST /api/create-ad
 Content-Type: application/json
+X-API-Key: (API_SECRET_KEY)
 
 {'{'}
   "customerId": "1234567890",
   "adGroupId": "9876543210",
   "headlines": ["Título 1", "Título 2", ... hasta 15],
   "descriptions": ["Desc 1", "Desc 2", "Desc 3", "Desc 4"],
-  "finalUrl": "https://example.com",
-  "refreshToken": "tu_refresh_token"
+  "finalUrl": "https://example.com"
 {'}'}
         </pre>
       </div>
@@ -49,7 +49,7 @@ Content-Type: application/json
           <li>✅ Headlines: 3-15 títulos (máx 30 caracteres cada uno)</li>
           <li>✅ Descriptions: 2-4 descripciones (máx 90 caracteres cada una)</li>
           <li>✅ Final URL válida</li>
-          <li>✅ Refresh Token de OAuth2</li>
+          <li>✅ Cabecera X-API-Key</li>
         </ul>
       </div>
 

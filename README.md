@@ -57,7 +57,11 @@ Respuesta:
 ```bash
 POST /api/create-ad
 Content-Type: application/json
+X-API-Key: <API_SECRET_KEY>
 ```
+
+Sin la cabecera `X-API-Key` correcta responde `401`; si `API_SECRET_KEY` no
+está configurada en el servidor, responde `503` (nunca queda abierto).
 
 Body:
 ```json
@@ -75,8 +79,7 @@ Body:
     "Descripción 3",
     "Descripción 4"
   ],
-  "finalUrl": "https://example.com",
-  "refreshToken": "1//tu_refresh_token_aqui"
+  "finalUrl": "https://example.com"
 }
 ```
 
@@ -104,6 +107,8 @@ GOOGLE_ADS_DEVELOPER_TOKEN=tu_developer_token
 GOOGLE_ADS_CLIENT_ID=tu_client_id.apps.googleusercontent.com
 GOOGLE_ADS_CLIENT_SECRET=tu_client_secret
 GOOGLE_ADS_LOGIN_CUSTOMER_ID=tu_mcc_customer_id
+GOOGLE_ADS_REFRESH_TOKEN=tu_refresh_token
+API_SECRET_KEY=una_clave_larga_y_aleatoria
 ```
 
 ## 🚀 Deploy en Vercel
@@ -168,14 +173,14 @@ func createResponsiveSearchAd(
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.setValue(apiSecretKey, forHTTPHeaderField: "X-API-Key") // desde el Keychain
     
     let payload: [String: Any] = [
         "customerId": customerId,
         "adGroupId": adGroupId,
         "headlines": headlines,
         "descriptions": descriptions,
-        "finalUrl": finalUrl,
-        "refreshToken": self.refreshToken // Guardado en keychain
+        "finalUrl": finalUrl
     ]
     
     request.httpBody = try JSONSerialization.data(withJSONObject: payload)

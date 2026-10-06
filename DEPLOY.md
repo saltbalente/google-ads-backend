@@ -61,10 +61,12 @@ git push -u origin main
    Click en "Environment Variables" y agrega:
    
    ```
-   GOOGLE_ADS_DEVELOPER_TOKEN = Kqg431In6D...  (tu developer token)
+   GOOGLE_ADS_DEVELOPER_TOKEN = tu_developer_token
    GOOGLE_ADS_CLIENT_ID = tu_client_id.apps.googleusercontent.com
    GOOGLE_ADS_CLIENT_SECRET = tu_client_secret
-   GOOGLE_ADS_LOGIN_CUSTOMER_ID = 8531174172  (tu MCC ID)
+   GOOGLE_ADS_LOGIN_CUSTOMER_ID = tu_mcc_customer_id
+   GOOGLE_ADS_REFRESH_TOKEN = tu_refresh_token
+   API_SECRET_KEY = una_clave_larga_y_aleatoria  (la app la manda en X-API-Key)
    ```
 
 7. **Click "Deploy"**
