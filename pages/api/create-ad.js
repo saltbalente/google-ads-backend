@@ -1,7 +1,9 @@
 import { GoogleAdsApi } from 'google-ads-api';
+import { requireApiKey } from '../../lib/auth';
 
 export default async function handler(req, res) {
-  // Solo permitir POST
+  // Solo permitir POST. Sin CORS: la app iOS no lo necesita y así ninguna web
+  // ajena puede llamar a este endpoint desde el navegador de un visitante.
   if (req.method !== 'POST') {
     return res.status(405).json({ 
       success: false,
@@ -9,15 +11,8 @@ export default async function handler(req, res) {
     });
   }
 
-  // Headers CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  // Este endpoint crea anuncios con las credenciales del MCC: nunca abierto.
+  if (!requireApiKey(req, res)) return;
 
   try {
     const {
@@ -25,9 +20,8 @@ export default async function handler(req, res) {
       adGroupId,
       headlines,
       descriptions,
-      finalUrl,
-      apiKey
-    } = req.body;
+      finalUrl
+    } = req.body || {};
 
     console.log('📥 Request recibido para customer:', customerId);
 
@@ -38,6 +32,17 @@ export default async function handler(req, res) {
         error: 'Faltan campos requeridos',
         required: ['customerId', 'adGroupId', 'headlines', 'descriptions', 'finalUrl']
       });
+    }
+
+    // IDs numéricos y URL https: nada de rutas de recurso inyectadas.
+    const cid = String(customerId).replace(/-/g, '');
+    if (!/^\d{6,12}$/.test(cid) || !/^\d{1,20}$/.test(String(adGroupId))) {
+      return res.status(400).json({ success: false, error: 'customerId o adGroupId inválido' });
+    }
+    try {
+      if (new URL(finalUrl).protocol !== 'https:') throw new Error('protocolo');
+    } catch {
+      return res.status(400).json({ success: false, error: 'finalUrl debe ser una URL https válida' });
     }
 
     // Validar headlines
@@ -60,7 +65,7 @@ export default async function handler(req, res) {
 
     // Validar longitud de títulos
     for (let i = 0; i < headlines.length; i++) {
-      if (headlines[i].length > 30) {
+      if (typeof headlines[i] !== 'string' || headlines[i].length > 30) {
         return res.status(400).json({ 
           success: false,
           error: `Título ${i + 1} excede 30 caracteres`,
@@ -72,7 +77,7 @@ export default async function handler(req, res) {
 
     // Validar longitud de descripciones
     for (let i = 0; i < descriptions.length; i++) {
-      if (descriptions[i].length > 90) {
+      if (typeof descriptions[i] !== 'string' || descriptions[i].length > 90) {
         return res.status(400).json({ 
           success: false,
           error: `Descripción ${i + 1} excede 90 caracteres`,
@@ -114,7 +119,7 @@ export default async function handler(req, res) {
 
     // Crear customer instance
     const customer = client.Customer({
-      customer_id: customerId,
+      customer_id: cid,
       refresh_token: refreshToken,
       login_customer_id: loginCustomerId
     });
@@ -126,7 +131,7 @@ export default async function handler(req, res) {
       entity: 'ad_group_ad',
       operation: 'create',
       resource: {
-        ad_group: `customers/${customerId}/adGroups/${adGroupId}`,
+        ad_group: `customers/${cid}/adGroups/${adGroupId}`,
         status: 'PAUSED',
         ad: {
           final_urls: [finalUrl],
@@ -145,7 +150,6 @@ export default async function handler(req, res) {
     // Usar el método mutate del servicio adGroupAds
     const response = await customer.adGroupAds.create([operation.resource]);
 
-    console.log('✅ Respuesta de Google Ads:', JSON.stringify(response, null, 2));
 
     // Extraer resource name
     const resourceName = response?.results?.[0]?.resource_name || 
@@ -169,27 +173,20 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('❌ Error creando anuncio:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      details: error.details
-    });
 
     // Extraer información útil del error
     let errorMessage = error.message || 'Error desconocido';
-    let errorDetails = null;
 
     // Si es un error de Google Ads API
     if (error.errors) {
-      errorDetails = error.errors;
       errorMessage = error.errors.map(e => e.message).join(', ');
     }
 
+    // El detalle (error.errors, stack) queda en los logs del servidor; al
+    // cliente solo el mensaje de Google Ads, sin tipo interno ni stack.
     return res.status(500).json({
       success: false,
       error: errorMessage,
-      errorType: error.constructor.name,
-      details: errorDetails,
       hint: 'Verifica que las credenciales sean correctas y que la cuenta tenga permisos'
     });
   }
